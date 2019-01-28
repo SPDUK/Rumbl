@@ -9,7 +9,7 @@ defmodule RumblWeb.UserController do
   # or not, before acting on it. Plug pipelines explicitly check for halted: true between
   # every plug invocation, so the halting concern is neatly solved by Plug.
 
-  plug :authenticate when action in [:index, :show]
+  plug :authenticate_user when action in [:index, :show]
 
   def index(conn, _params) do
     users = Accounts.list_users()
@@ -39,20 +39,6 @@ defmodule RumblWeb.UserController do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         render(conn, "new.html", changeset: changeset)
-    end
-  end
-
-  # If there’s a current user, we return the connection unchanged. Otherwise we
-  # store a flash message and redirect back to our application root. We use halt(conn)
-  # to stop any downstream transformations.
-  defp authenticate(conn, _opts) do
-    if conn.assigns.current_user do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must be logged in to access that page")
-      |> redirect(to: Routes.page_path(conn, :index))
-      |> halt()
     end
   end
 end
