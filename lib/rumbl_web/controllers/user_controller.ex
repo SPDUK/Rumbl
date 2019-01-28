@@ -4,8 +4,14 @@ defmodule RumblWeb.UserController do
   alias Rumbl.Accounts.User
 
   def index(conn, _params) do
-    users = Accounts.list_users()
-    render(conn, "index.html", users: users)
+    case authenticate(conn) do
+      %Plug.Conn{halted: true} = conn ->
+        conn
+
+      conn ->
+        users = Accounts.list_users()
+        render(conn, "index.html", users: users)
+    end
   end
 
   def show(conn, %{"id" => id}) do
@@ -27,6 +33,20 @@ defmodule RumblWeb.UserController do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         render(conn, "new.html", changeset: changeset)
+    end
+  end
+
+  # If there’s a current user, we return the connection unchanged. Otherwise we
+  # store a flash message and redirect back to our application root. We use halt(conn)
+  # to stop any downstream transformations.
+  defp authenticate(conn) do
+    if conn.assigns.current_user do
+      conn
+    else
+      conn
+      |> put_flash(:error, "You must be logged in to access that page")
+      |> redirect(to: Routes.page_path(conn, :index))
+      |> halt()
     end
   end
 end
