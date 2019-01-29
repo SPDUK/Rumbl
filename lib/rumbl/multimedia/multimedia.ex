@@ -127,6 +127,12 @@ defmodule Rumbl.Multimedia do
     Repo.get_by(Category, name: name) || Repo.insert!(%Category{name: name})
   end
 
+  def list_alphabetical_categories do
+    Category
+    |> Category.alphabetical()
+    |> Repo.all()
+  end
+
   # fetches all videos with a matching user ID.
   defp user_videos_query(query, %Accounts.User{id: user_id}) do
     from(v in query, where: v.user_id == ^user_id)

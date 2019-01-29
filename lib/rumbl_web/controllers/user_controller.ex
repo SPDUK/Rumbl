@@ -9,6 +9,7 @@ defmodule RumblWeb.UserController do
   # or not, before acting on it. Plug pipelines explicitly check for halted: true between
   # every plug invocation, so the halting concern is neatly solved by Plug.
 
+  # imported into all controllers because it is in rumbl_web
   plug :authenticate_user when action in [:index, :show]
 
   def index(conn, _params) do
