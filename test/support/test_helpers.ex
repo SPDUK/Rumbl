@@ -4,6 +4,12 @@ defmodule Rumbl.TestHelpers do
     Multimedia
   }
 
+  @doc """
+  Takes some attrs if no attrs are supplied it will have hard-coded sample data.
+  Includes credential
+
+  Registers a user and returns that user.
+  """
   def user_fixture(attrs \\ %{}) do
     username = "user#{System.unique_integer([:positive])}"
 
@@ -22,6 +28,11 @@ defmodule Rumbl.TestHelpers do
     user
   end
 
+  @doc """
+  Takes a user and attributes, if no attrs are supplied it will have hard-coded sample data.
+
+  Creates a video and returns it.
+  """
   def video_fixture(%Accounts.User{} = user, attrs \\ %{}) do
     attrs =
       Enum.into(attrs, %{
