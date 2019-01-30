@@ -7,6 +7,11 @@ defmodule RumblWeb.Auth do
   def init(opts), do: opts
 
   @doc """
+  If a user is in the conn.assigns, we honor it, no
+  matter how it got there. We have an improved testing story that doesn’t require
+  us to write mocks or any other elaborate scaffolding.
+
+
   call checks if a :user_id is stored in the session. If one exists, we look it up and
   assign the result in the connection. assign is a function imported from Plug.Conn
   that slightly transforms the connection—in this case, storing the user (or nil)
@@ -16,8 +21,17 @@ defmodule RumblWeb.Auth do
   """
   def call(conn, _opts) do
     user_id = get_session(conn, :user_id)
-    user = user_id && Accounts.get_user(user_id)
-    assign(conn, :current_user, user)
+
+    cond do
+      user = conn.assigns[:current_user] ->
+        conn
+
+      user = user_id && Accounts.get_user(user_id) ->
+        assign(conn, :current_user, user)
+
+      true ->
+        assign(conn, :current_user, nil)
+    end
   end
 
   # If there’s a current user, we return the connection unchanged. Otherwise we
