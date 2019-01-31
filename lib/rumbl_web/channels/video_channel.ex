@@ -18,13 +18,14 @@ defmodule RumblWeb.VideoChannel do
 
   Also adds the video ID from our topic to socket.assigns.
   """
-  def join("videos:" <> video_id, _params, socket) do
+  def join("videos:" <> video_id, params, socket) do
+    last_seen_id = params["last_seen_id"] || 0
     video_id = String.to_integer(video_id)
     video = Multimedia.get_video!(video_id)
 
     annotations =
       video
-      |> Multimedia.list_annotations()
+      |> Multimedia.list_annotations(last_seen_id)
       |> Phoenix.View.render_many(AnnotationView, "annotation.json")
 
     {:ok, %{annotations: annotations}, assign(socket, :video_id, video_id)}
