@@ -14,6 +14,16 @@ const Video = {
   },
   onReady(videoId, socket) {
     const msgContainer = document.getElementById('msg-container');
+    msgContainer.addEventListener('click', e => {
+      e.preventDefault();
+      let seconds =
+        e.target.getAttribute('data-seek') || e.target.parentNode.getAttribute('data-seek');
+      if (!seconds) {
+        return;
+      }
+      Player.seekTo(seconds);
+    });
+
     const msgInput = document.getElementById('msg-input');
     const postButton = document.getElementById('msg-submit');
     const vidChannel = socket.channel('videos:' + videoId);
@@ -32,26 +42,49 @@ const Video = {
 
     vidChannel
       .join()
-      .receive('ok', ({ annotations }) => {
-        annotations.forEach(ann => this.renderAnnotation(msgContainer, ann));
+      .receive('ok', resp => {
+        this.scheduleMessages(msgContainer, resp.annotations);
       })
       .receive('error', reason => console.log('join failed', reason));
-  },
-  esc(str) {
-    const div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
   },
   renderAnnotation(msgContainer, { user, body, at }) {
     const template = document.createElement('div');
     template.innerHTML = `
     <a href="#" data-seek="${this.esc(at)}">
+      [${this.formatTime(at)}]
       <b>${this.esc(user.username)}</b>: ${this.esc(body)}
     </a>
     `;
-
     msgContainer.appendChild(template);
     msgContainer.scrollTop = msgContainer.scrollHeight;
+  },
+  scheduleMessages(msgContainer, annotations) {
+    clearTimeout(this.scheduleTimer);
+    this.schedulerTimer = setTimeout(() => {
+      const ctime = Player.getCurrentTime();
+      const remaining = this.renderAtTime(annotations, ctime, msgContainer);
+      this.scheduleMessages(msgContainer, remaining);
+    }, 1000);
+  },
+  renderAtTime(annotations, seconds, msgContainer) {
+    return annotations.filter(ann => {
+      if (ann.at > seconds) {
+        return true;
+      } else {
+        this.renderAnnotation(msgContainer, ann);
+        return false;
+      }
+    });
+  },
+  formatTime(at) {
+    const date = new Date(null);
+    date.setSeconds(at / 1000);
+    return date.toISOString().substr(14, 5);
+  },
+  esc(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
   }
 };
 export default Video;
