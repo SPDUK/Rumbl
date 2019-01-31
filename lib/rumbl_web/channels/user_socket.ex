@@ -1,8 +1,12 @@
 defmodule RumblWeb.UserSocket do
   use Phoenix.Socket
 
-  ## Channels
-  # channel "room:*", RumblWeb.RoomChannel
+  # Transports route events into your UserSocket, where they’re dispatched into
+  # your channels based on topic patterns that you declare with the channel macro.
+  # Our videos:* convention categorizes topics with a resource name, followed by
+  # a resource ID.
+
+  channel "videos:*", RumblWeb.VideoChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
