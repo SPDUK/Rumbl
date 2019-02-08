@@ -1,49 +1,41 @@
 defmodule Rumbl.Counter do
-  # only exist to send messages to our server process (async, sends without waiting for reply)
-  def inc(pid), do: send(pid, :inc)
-  def dec(pid), do: send(pid, :dec)
+  use GenServer
+
+  # async, calls handle_cast
+  def inc(pid), do: GenServer.cast(pid, :inc)
+  def dec(pid), do: GenServer.cast(pid, :dec)
 
   @doc """
-     must send a request for the value of the counter and await the response.
-     (sync, blocks the caller proccess while waiting for a response)
+   When we want to send synchronous messages that return, calls handle_call
+   the state of the server, we use GenServer.call
   """
-  def val(pid, timeout \\ 5000) do
-    # associate a response with the current request using a globally unique reference
-    ref = make_ref()
-    # send message to our counter (listen) which will return a message we catch with receive
-    send(pid, {:val, self(), ref})
-
-    # rather than rebinding the ref we use the previous one from make_ref()
-    # only matches that exact ref, make sure to only match responses related to this explicit request
-    receive do
-      {^ref, val} -> val
-    after
-      timeout -> exit(:timeout)
-    end
+  def val(pid) do
+    GenServer.call(pid, :val)
   end
 
   @doc """
-  Takes in an initial value, it's only job is to spawn a process and return {:ok, pid} where pid idenfities the spawned process
-  The spawned process calls the private function named listen, which listens for messages and processes them.
+    We have to tweak the start_link to start a GenServer, giving it the current module
+    name and the counter. This function spawns a new process and invokes the
+    Rumbl.Counter.init function inside this new process to set up its initial state.
   """
   def start_link(initial_val) do
-    {:ok, spawn_link(fn -> listen(initial_val) end)}
+    GenServer.start_link(__MODULE__, initial_val)
   end
 
-  # Takes in a value which is either a single atom :inc or :dec, or it will be a tuple that matches {:val, sender, ref}.
-  # If we get :inc or :dec we just update the state of value with +1.
-  # Otherwise we send back a message to the sender
-  defp listen(val) do
-    receive do
-      :inc ->
-        listen(val + 1)
+  def init(initial_val) do
+    {:ok, initial_val}
+  end
 
-      :dec ->
-        listen(val - 1)
+  # explicitly tell OTP when to send a reply and when not to using :noreply and :reply
+  def handle_cast(:inc, val) do
+    {:noreply, val + 1}
+  end
 
-      {:val, sender, ref} ->
-        send(sender, {ref, val})
-        listen(val)
-    end
+  def handle_cast(:dec, val) do
+    {:noreply, val - 1}
+  end
+
+  def handle_call(:val, _from, val) do
+    {:reply, val, val}
   end
 end
