@@ -12,8 +12,7 @@ defmodule Rumbl.Application do
       Rumbl.Repo,
       # Start the endpoint when the application starts
       RumblWeb.Endpoint,
-      # calls Rumbl.Counter with an initial state of 5
-      Supervisor.child_spec({Rumbl.Counter, 5}, restart: :temporary)
+      Rumbl.InfoSys.Supervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
