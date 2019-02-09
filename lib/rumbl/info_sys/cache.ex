@@ -34,8 +34,25 @@ defmodule Rumbl.InfoSys.Cache do
     ArgumentError -> :error
   end
 
+  @clear_interval :timer.seconds(60)
   def init(opts) do
-    {:ok, %{table: new_table(opts[:name])}}
+    state = %{
+      interval: opts[:clear_interval] || @clear_interval,
+      # holds a pid for the timer
+      timer: nil,
+      table: new_table(opts[:name])
+    }
+
+    {:ok, schedule_clear(state)}
+  end
+
+  def handle_info(:clear, state) do
+    :ets.delete_all_objects(state.table)
+    {:noreply, schedule_clear(state)}
+  end
+
+  defp schedule_clear(state) do
+    %{state | timer: Process.send_after(self(), :clear, state.interval)}
   end
 
   # create and name our ETS table with new_table. ETS tables are owned by a
