@@ -22,7 +22,11 @@ defmodule Rumbl.Counter do
     GenServer.start_link(__MODULE__, initial_val)
   end
 
+  @doc """
+    Sends itself a :tick message every 1,000 ms
+  """
   def init(initial_val) do
+    Process.send_after(self(), :tick, 1000)
     {:ok, initial_val}
   end
 
@@ -37,5 +41,17 @@ defmodule Rumbl.Counter do
 
   def handle_call(:val, _from, val) do
     {:reply, val, val}
+  end
+
+  def handle_info(:tick, val) when val <= 0, do: raise("Boom!")
+
+  @doc """
+    Processes the :tick message
+    Sets up a new tick and decrements the state.
+  """
+  def handle_info(:tick, val) do
+    IO.puts("tick, #{val}")
+    Process.send_after(self(), :tick, 1000)
+    {:noreply, val - 1}
   end
 end
