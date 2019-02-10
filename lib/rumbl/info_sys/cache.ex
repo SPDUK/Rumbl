@@ -46,11 +46,15 @@ defmodule Rumbl.InfoSys.Cache do
     {:ok, schedule_clear(state)}
   end
 
+  @doc """
+    Clears all the ets tables for that state, then schedules another clear
+  """
   def handle_info(:clear, state) do
     :ets.delete_all_objects(state.table)
     {:noreply, schedule_clear(state)}
   end
 
+  # uses Process.send_after to send a message in the future that clears cache
   defp schedule_clear(state) do
     %{state | timer: Process.send_after(self(), :clear, state.interval)}
   end
