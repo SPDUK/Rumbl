@@ -11,12 +11,30 @@ defmodule Rumbl.InfoSys do
     defstruct score: 0, text: nil, url: nil, backend: nil
   end
 
+  @doc """
+    Waits for results, when recieving sorts it sorts them by score and report the top ones.
+
+    Uses yield_many to get the results of all the tasks (api fetches) that have finished,
+    killing any tasks that aren't finished yet.
+  """
   def compute(query, opts \\ []) do
+    timeout = opts[:timeout] || 10_000
     opts = Keyword.put_new(opts, :limit, 10)
     backends = opts[:backends] || @backends
 
     backends
     |> Enum.map(&async_query(&1, query, opts))
+    |> Task.yield_many(timeout)
+    |> Enum.map(fn {task, res} -> res || Task.shutdown(task, :brutal_kill) end)
+    |> Enum.flat_map(fn
+      {:ok, results} ->
+        results
+
+      _ ->
+        []
+    end)
+    |> Enum.sort(&(&1.score >= &2.score))
+    |> Enum.take(opts[:limit])
   end
 
   # invoking a task that needs a module, function, and arguments for the new task
